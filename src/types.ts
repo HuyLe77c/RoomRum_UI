@@ -1,0 +1,17 @@
+export type Role = 'Tenant' | 'Landlord' | 'Admin'
+export type Session = { userId: string; name: string; email: string | null; role: Role; token: string }
+export type CurrentUser = Omit<Session, 'token'> & { phone?: string | null; dob?: string | null; gender?: string | null; imageUrl?: string | null; status?: string | null }
+export type Room = { roomId: string; userId: string; title: string | null; address: string | null; type: string | null; price: number | null; area: number | null; status: string | null; imageUrl?: string | null; estimatedMonthlyCost?: number | null; distanceKm?: number | null; latitude?: number | null; longitude?: number | null }
+export type RoomDetail = Room & { electricityFee: number | null; waterFee: number | null; serviceFee: number | null; deposit: number | null; description: string | null; rule: string | null; owner: { userId: string; name: string; phone: string | null }; amenities: { amenityId: string; amenityName: string }[]; images: { roomImageId: string; imageUrl: string | null }[]; averageRating: number | null; ratingCount: number }
+export type OwnedRoom = Room & { electricityFee: number | null; waterFee: number | null; serviceFee: number | null; deposit: number | null; description: string | null; rule: string | null; amenities: { amenityId: string; amenityName: string }[]; images: { roomImageId: string; imageUrl: string | null }[] }
+export type RoomSearch = { items: Room[]; total: number; page: number; pageSize: number }
+export type Amenity = { amenityId: string; amenityName: string }
+export type Favorite = { favoriteId: string; roomId: string; title: string | null; price: number | null; imageUrl: string | null }
+export type Appointment = { appointmentId: string; userId: string; roomId: string; appointmentDate: string; appointmentTime: string; status: string; description: string | null; roomTitle: string | null; guestName: string }
+export type Tenancy = { roomId: string; userId: string; status: string; hiredAt: string; leftAt: string | null; roomTitle: string | null; tenantName: string }
+export type Sharing = { sharingId: string; userId: string; roomId: string; title: string | null; quantity: number | null; gender: string | null; sharingFee: number | null; introduction: string | null; rule: string | null; roomTitle: string | null; author: string }
+export type Repair = { maintenanceId: string; userId: string; roomId: string; priority: string | null; repairItems: string | null; description: string | null; status: string | null; expectingDate: string | null; response: string | null; roomTitle: string | null; tenantName: string }
+export type Report = { reportId: string; userId: string; roomId: string; reason: string | null; reportDate: string | null; status: string | null }
+export type Conversation = { conversationId: string; createdAt: string | null; lastMessage: { content: string | null; chatAt: string | null } | null; otherUserId: string | null; otherUserName: string | null }
+export type Message = { messageId: string; conversationId: string; sender: string; receiver: string; content: string | null; chatAt: string | null }
+export type AdminUser = { userId: string; name: string; email: string | null; phone: string | null; status: string | null; role: Role; createdAt: string | null }
