@@ -1,0 +1,22 @@
+import { useState } from 'react'
+import type { FormEvent } from 'react'
+import { Users } from 'lucide-react'
+import { api, json } from '../../shared/api/client'
+import { ErrorState, Loading, State, date, useResource } from '../../shared/ui'
+import type { OwnedRoom, Tenancy } from '../../shared/types'
+import { label, Status, Heading, Feedback } from './shared'
+
+export function LandlordTenancies() {
+  const rooms = useResource<OwnedRoom[]>('/rooms/mine?page=1&pageSize=100')
+  const tenancies = useResource<Tenancy[]>('/room-tenants/mine?page=1&pageSize=100')
+  const [roomId, setRoomId] = useState('')
+  const [tenantEmail, setTenantEmail] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [notice, setNotice] = useState('')
+  const [problem, setProblem] = useState('')
+  const [history, setHistory] = useState<{ key: string; items: { status: string; hiredAt: string; leftAt: string | null }[] } | null>(null)
+  const invite = async (event: FormEvent) => { event.preventDefault(); setBusy(true); setProblem(''); try { await api(`/room-tenants/${roomId}/invite-by-email`, json('POST', { email: tenantEmail.trim() })); setNotice('Đã gửi lời mời thuê phòng.'); setTenantEmail(''); tenancies.reload() } catch (cause) { setProblem((cause as Error).message) } finally { setBusy(false) } }
+  const end = async (item: Tenancy) => { if (!window.confirm(item.status === 'Pending' ? 'Hủy lời mời này?' : 'Kết thúc quan hệ thuê phòng này?')) return; try { await api(`/room-tenants/${item.roomId}/${item.userId}/end`, { method: 'PATCH' }); setNotice('Đã cập nhật quan hệ thuê.'); tenancies.reload() } catch (cause) { setProblem((cause as Error).message) } }
+  const loadHistory = async (item: Tenancy) => { try { const page = await api<{ items: { status: string; hiredAt: string; leftAt: string | null }[] }>(`/room-tenants/${item.roomId}/${item.userId}/history?page=1&pageSize=20`); setHistory({ key: `${item.roomId}-${item.userId}`, items: page.items }) } catch (cause) { setProblem((cause as Error).message) } }
+  return <><Heading title="Quản lý người thuê" description="Gửi lời mời thuê, theo dõi trạng thái và lịch sử thuê phòng." /><Feedback message={notice} /><Feedback message={problem} error /><form className="panel landlord-invite" onSubmit={invite}><div><span className="section-label">LỜI MỜI MỚI</span><h2>Mời người thuê vào phòng</h2><p>Nhập email mà người thuê đã đăng ký trên RoomRum.</p></div><div className="form-grid"><label>Phòng của bạn<select required value={roomId} onChange={e => setRoomId(e.target.value)}><option value="">Chọn phòng</option>{rooms.data?.filter(room => room.status !== 'Hidden').map(room => <option key={room.roomId} value={room.roomId}>{room.title || room.roomId}</option>)}</select></label><label>Email người thuê<input required type="email" maxLength={255} value={tenantEmail} onChange={e => setTenantEmail(e.target.value)} placeholder="email@vidu.com" /></label></div><button className="button button-primary" disabled={busy || rooms.loading || !!rooms.error}>Gửi lời mời</button>{rooms.error && <p className="form-error">{rooms.error}</p>}</form>{tenancies.loading ? <Loading /> : tenancies.error ? <ErrorState message={tenancies.error} retry={tenancies.reload} /> : tenancies.data?.length ? <div className="record-list">{tenancies.data.map(item => <article className="panel record landlord-record" key={`${item.roomId}-${item.userId}`}><div className="record-icon"><Users /></div><div className="record-main"><h2>{item.roomTitle || rooms.data?.find(room => room.roomId === item.roomId)?.title || 'Phòng trọ'}</h2><p>{item.tenantName} · Bắt đầu: {date(item.hiredAt)}</p>{item.leftAt && <small>Kết thúc: {date(item.leftAt)}</small>}{history?.key === `${item.roomId}-${item.userId}` && <div className="history-list">{history.items.length ? history.items.map((entry, index) => <p key={index}>{date(entry.hiredAt)} – {date(entry.leftAt)} · {label(entry.status)}</p>) : <p>Chưa có lịch sử.</p>}</div>}</div><Status value={item.status} /><div className="record-actions"><button className="button button-ghost small" onClick={() => loadHistory(item)}>Lịch sử</button>{['Pending', 'Active'].includes(item.status) && <button className="button button-secondary small" onClick={() => end(item)}>{item.status === 'Pending' ? 'Hủy lời mời' : 'Kết thúc thuê'}</button>}</div></article>)}</div> : <State title="Chưa có người thuê" description="Các lời mời và quan hệ thuê sẽ xuất hiện ở đây." />}</>
+}

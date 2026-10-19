@@ -4,7 +4,7 @@ Giao diện React + TypeScript + Vite cho RoomRum. Hướng hình ảnh chính t
 
 ## Chạy trong VS Code
 
-Mở thư mục `C:\Users\cubin\OneDrive\Desktop\PRN232 UI` bằng VS Code, sau đó chạy trong terminal:
+Mở thư mục `RoomRum_UI-main` bằng VS Code, sau đó chạy trong terminal:
 
 ```powershell
 npm install
@@ -23,6 +23,15 @@ Kiểm tra bản build:
 npm run build
 ```
 
+## Cấu trúc mã nguồn
+
+- `src/app/`: route của ứng dụng; các URL công khai và theo vai trò được giữ tại đây.
+- `src/features/`: trang và mã theo tính năng (`home`, `rooms`, `search`, `maps`, `auth`, `sharing`, `landlord`, `dashboard`). Mỗi màn hình chủ trọ và bảng điều khiển có module riêng.
+- `src/shared/api/`, `auth/`, `hooks/`, `types/`, `utils/`, `components/`: mã dùng chung; `src/shared/ui.ts` là điểm xuất chung cho các trang.
+- `src/styles/`: CSS được chia theo khu vực và import theo thứ tự cũ trong `src/main.tsx`; CSS bản đồ chính ở `src/features/maps/map.css`.
+
+Việc tổ chức lại thư mục chỉ thay vị trí module và đường dẫn import; route, lời gọi API, dữ liệu và hành vi giao diện được giữ nguyên.
+
 ## Các trang
 
 - Công khai: trang chủ, tìm kiếm/lọc phòng, chi tiết phòng, bản đồ, ở ghép.
@@ -39,6 +48,6 @@ Chủ trọ mời người thuê bằng email đã đăng ký qua `POST /api/roo
 
 ## Bản đồ
 
-Bản đồ mặc định dùng nền vector OpenFreeMap với các kiểu Phố rõ, Tối giản, Đậm nét; người xem có thể chọn Cơ bản để dùng tile OpenStreetMap. Lựa chọn được lưu trong trình duyệt và nếu nền vector không tải được thì trang chuyển sang nền Cơ bản. Marker ghim các tọa độ đã lưu trong `RoomRum_db`; popup lấy thêm mô tả và tiện ích từ API khi chọn phòng. Chủ trọ chọn vị trí khi tạo hoặc sửa phòng; phòng chưa có tọa độ vẫn xuất hiện trong danh sách nhưng không có marker. Người xem có thể tìm địa điểm, dùng vị trí hiện tại, chọn tâm bằng cách nhấn bản đồ, hoặc tìm phòng trong khung bản đồ đang xem. Các thao tác đó dùng bộ lọc bán kính của API; khoảng cách là đường chim bay. Liên kết từ trang chi tiết mở đúng marker của phòng.
+Bản đồ chính và các bản đồ chọn vị trí dùng nền vector OpenFreeMap với các kiểu Phố rõ, Tối giản, Đậm nét; người xem có thể chọn Cơ bản để dùng tile OpenStreetMap. Lựa chọn được lưu trong trình duyệt và nếu nền vector không tải được thì trang chuyển sang nền Cơ bản. Marker ghim các tọa độ đã lưu trong `RoomRum_db`; popup lấy thêm mô tả và tiện ích từ API khi chọn phòng. Khi chủ trọ nhập địa chỉ, form tự tra vị trí qua API và đặt ghim; chủ trọ có thể nhấn bản đồ để chỉnh. Phòng chưa có tọa độ vẫn xuất hiện trong danh sách nhưng không có marker. Người xem có thể tìm địa điểm, dùng vị trí hiện tại, chọn tâm bằng cách nhấn bản đồ, hoặc tìm phòng trong khung bản đồ đang xem. Các thao tác đó dùng bộ lọc bán kính của API; khoảng cách là đường chim bay. Liên kết từ trang chi tiết mở đúng marker của phòng.
 
-Tra cứu tên địa điểm đi qua `GET /api/locations/search` của API để dùng cache và giới hạn tốc độ chung, không gọi Nominatim trực tiếp từ trình duyệt. Dịch vụ tra cứu và nền bản đồ cần Internet. `VITE_MAP_TILE_URL` chỉ thay URL của nền Cơ bản khi build. Nếu triển khai với lượng truy cập lớn, cấu hình dịch vụ geocoding/tile có năng lực phù hợp và tuân thủ điều khoản của nhà cung cấp.
+Tra cứu tên địa điểm đi qua `GET /api/locations/search` của API để dùng cache và giới hạn tốc độ chung, không gọi Photon trực tiếp từ trình duyệt. Dịch vụ tra cứu và nền bản đồ cần Internet. `VITE_MAP_TILE_URL` chỉ thay URL của nền Cơ bản khi build. Nếu triển khai với lượng truy cập lớn, cấu hình dịch vụ geocoding/tile có năng lực phù hợp và tuân thủ điều khoản của nhà cung cấp.

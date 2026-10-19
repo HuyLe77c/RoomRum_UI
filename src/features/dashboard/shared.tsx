@@ -1,0 +1,8 @@
+import type { ReactNode } from 'react'
+import { ErrorState, Loading, State, useResource } from '../../shared/ui'
+
+export type RolePath = 'tenant' | 'landlord' | 'admin'
+export function Heading({ eyebrow, title, description, action }: { eyebrow: string; title: string; description?: string; action?: ReactNode }) { return <div className="dash-heading"><div><span className="section-label">{eyebrow}</span><h1>{title}</h1>{description && <p>{description}</p>}</div>{action}</div> }
+export function Badge({ status }: { status: string | null | undefined }) { const labels: Record<string, string> = { Available: 'Còn trống', Rented: 'Đã thuê', Draft: 'Bản nháp', Hidden: 'Đã ẩn', Pending: 'Đang chờ', Active: 'Đang thuê', Cancelled: 'Đã hủy', Ended: 'Đã kết thúc', Confirmed: 'Đã xác nhận', Rejected: 'Đã từ chối', Completed: 'Hoàn tất', InProgress: 'Đang xử lý', Resolved: 'Đã giải quyết', Locked: 'Đã khóa' }; return <span className={`badge ${status?.toLowerCase() || 'unknown'}`}>{labels[status || ''] || status || 'Chưa rõ'}</span> }
+export function Notice({ text }: { text: string }) { return text ? <div className="inline-notice" role="status">{text}</div> : null }
+export function DataPanel<T>({ resource, empty, children }: { resource: ReturnType<typeof useResource<T>>; empty: string; children: (data: T) => ReactNode }) { return resource.loading ? <Loading /> : resource.error ? <ErrorState message={resource.error} retry={resource.reload} /> : resource.data && (!Array.isArray(resource.data) || resource.data.length) ? children(resource.data) : <State title={empty} description="Dữ liệu sẽ xuất hiện tại đây khi có hoạt động mới." /> }

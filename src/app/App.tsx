@@ -1,11 +1,14 @@
 import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
-import { AuthProvider, Footer, Header, State } from './ui'
-import { AuthPage, DetailPage, HomePage, SharingPage } from './PublicPages'
-import { SearchPage } from './AdvancedSearchPage'
-import { DashboardRouter } from './DashboardPages'
+import { AuthProvider, Footer, Header, State } from '../shared/ui'
+import { AuthPage } from '../features/auth/AuthPage'
+import { DetailPage } from '../features/rooms/DetailPage'
+import { HomePage } from '../features/home/HomePage'
+import { SharingPage } from '../features/sharing/SharingPage'
+import { SearchPage } from '../features/search/AdvancedSearchPage'
+import { DashboardRouter } from '../features/dashboard/DashboardRouter'
 
-const MapPage = lazy(() => import('./MapPage').then(module => ({ default: module.MapPage })))
+const MapPage = lazy(() => import('../features/maps/MapPage').then(module => ({ default: module.MapPage })))
 
 export default function App() {
   return <AuthProvider><Routes>

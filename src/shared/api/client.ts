@@ -1,4 +1,4 @@
-import type { Session } from './types'
+import type { Session } from '../types'
 
 const SESSION_KEY = 'roomrum-session'
 
