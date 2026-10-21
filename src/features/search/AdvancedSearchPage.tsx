@@ -6,6 +6,7 @@ import L from 'leaflet'
 import { ChevronLeft, ChevronRight, Compass, MapPin, Search, SlidersHorizontal } from 'lucide-react'
 import { api } from '../../shared/api/client'
 import { OpenFreeMapLayer } from '../maps/OpenFreeMapLayer'
+import { parseMapPoint } from '../maps/mapCoordinates'
 import { ErrorState, Footer, Header, Loading, RoomCard, State, money, useAuth, useResource } from '../../shared/ui'
 import type { Amenity, RoomSearch } from '../../shared/types'
 
@@ -90,15 +91,30 @@ export function SearchPage() {
   useEffect(() => setDraft(readFilters(new URLSearchParams(serializedParams))), [serializedParams])
 
   const page = Math.max(1, Number(params.get('page') || 1) || 1)
+  const urlPoint = parseMapPoint(params.get('latitude'), params.get('longitude'))
+  const invalidCoordinates = (params.has('latitude') || params.has('longitude')) && !urlPoint
+  const rawRadius = params.get('maxDistanceKm')
+  const invalidRadius = rawRadius !== null && (!urlPoint || !rawRadius.trim() ||
+    !Number.isFinite(Number(rawRadius)) || Number(rawRadius) <= 0 || Number(rawRadius) > 100)
+  const invalidSort = params.get('sort') === 'distance' && !urlPoint
+  useEffect(() => {
+    if (!invalidCoordinates && !invalidRadius && !invalidSort) return
+    const next = new URLSearchParams(params)
+    if (invalidCoordinates) { next.delete('latitude'); next.delete('longitude'); next.delete('locationLabel') }
+    if (invalidRadius) next.delete('maxDistanceKm')
+    if (invalidSort) next.delete('sort')
+    setNotice('Liên kết có tọa độ hoặc bán kính không hợp lệ; đã bỏ phần tìm kiếm vị trí.')
+    setParams(next, { replace: true })
+  }, [serializedParams, invalidCoordinates, invalidRadius, invalidSort, setParams])
   const apiParams = new URLSearchParams(params)
+  if (invalidCoordinates) { apiParams.delete('latitude'); apiParams.delete('longitude') }
+  if (invalidRadius) apiParams.delete('maxDistanceKm')
+  if (invalidSort) apiParams.delete('sort')
   apiParams.delete('locationLabel')
   apiParams.set('page', String(page))
   apiParams.set('pageSize', '12')
   const { data, loading, error, reload } = useResource<RoomSearch>(`/rooms?${apiParams}`)
-  const point = useMemo<[number, number] | null>(() => {
-    const lat = Number(draft.latitude); const lon = Number(draft.longitude)
-    return draft.latitude && draft.longitude && Number.isFinite(lat) && Number.isFinite(lon) ? [lat, lon] : null
-  }, [draft.latitude, draft.longitude])
+  const point = useMemo(() => parseMapPoint(draft.latitude, draft.longitude), [draft.latitude, draft.longitude])
   const radiusKm = Number(draft.maxDistanceKm) > 0 ? Number(draft.maxDistanceKm) : null
 
   useEffect(() => {
@@ -135,10 +151,13 @@ export function SearchPage() {
   const findLocation = async () => {
     const place = draft.locationLabel.trim()
     if (!place) { setNotice('Nhập địa điểm trước khi tra vị trí.'); return }
+    if (suggestions.length) { const choice = suggestions[activeSuggestion]; pickLocation(choice.latitude, choice.longitude, choice.displayName); return }
     setLocating(true); setNotice('')
     try {
-      const result = await api<LocationSuggestion>(`/locations/search?q=${encodeURIComponent(place)}`)
-      pickLocation(result.latitude, result.longitude, result.displayName || place)
+      const places = await api<LocationSuggestion[]>(`/locations/suggest?q=${encodeURIComponent(place)}`)
+      if (places.length === 1) pickLocation(places[0].latitude, places[0].longitude, places[0].displayName)
+      else if (places.length) { setSuggestions(places); setActiveSuggestion(0); setNotice('Có nhiều địa điểm phù hợp. Hãy chọn đúng vị trí trong danh sách.') }
+      else setNotice('Không tìm thấy địa điểm. Hãy nhập cụ thể hơn hoặc chọn trực tiếp trên bản đồ.')
     } catch (cause) { setNotice((cause as Error).message) } finally { setLocating(false) }
   }
   const apply = (event: FormEvent) => {
@@ -200,7 +219,7 @@ export function SearchPage() {
           {suggestions.length > 0 && <div id="search-location-suggestions" className="address-suggestions" role="listbox" aria-label="Địa điểm gợi ý">{suggestions.map((place, index) => <button id={`search-location-option-${index}`} className={index === activeSuggestion ? 'active' : ''} role="option" aria-selected={index === activeSuggestion} type="button" key={`${place.displayName}-${place.latitude}-${place.longitude}`} onMouseEnter={() => setActiveSuggestion(index)} onClick={() => pickLocation(place.latitude, place.longitude, place.displayName)}><MapPin size={16} /><span>{place.displayName}{place.isApproximate && <small>Vị trí gần đúng</small>}</span></button>)}</div>}
           </div>
           <button type="button" className="button button-secondary full" disabled={locating} onClick={findLocation}><Search size={16} />{locating ? 'Đang tra vị trí…' : 'Tìm vị trí'}</button>
-          <div className="location-picker" aria-label="Chọn tâm tìm kiếm trên bản đồ"><MapContainer center={[10.8, 106.7]} zoom={11} scrollWheelZoom={false} className="location-picker-map"><OpenFreeMapLayer /><MapCenter point={point} /><MapSelection onPick={pickLocation} />{point && radiusKm && <Circle center={point} radius={radiusKm * 1000} pathOptions={{ color: '#1e63b4', fillColor: '#1e63b4', fillOpacity: 0.12, weight: 2 }} />}{point && <Marker position={point} icon={selectedSearchIcon}><Popup>{draft.locationLabel}</Popup></Marker>}</MapContainer></div>
+          <div className="location-picker" aria-label="Chọn tâm tìm kiếm trên bản đồ"><MapContainer center={[10.8, 106.7]} zoom={11} scrollWheelZoom={false} className="location-picker-map"><OpenFreeMapLayer onFallback={() => setNotice('Lớp bản đồ chi tiết không tải được; đã chuyển sang bản đồ cơ bản. Bạn vẫn có thể chọn tâm tìm kiếm.')} /><MapCenter point={point} /><MapSelection onPick={pickLocation} />{point && radiusKm && <Circle center={point} radius={radiusKm * 1000} pathOptions={{ color: '#1e63b4', fillColor: '#1e63b4', fillOpacity: 0.12, weight: 2 }} />}{point && <Marker position={point} icon={selectedSearchIcon}><Popup>{draft.locationLabel}</Popup></Marker>}</MapContainer></div>
           <p className="filter-explainer">{point ? `Tâm đã chọn: ${draft.locationLabel}. ${radiusKm ? `Vòng tròn ${radiusKm} km hiển thị trên bản đồ.` : ''}` : 'Chọn địa điểm gợi ý hoặc nhấn vào bản đồ để đặt tâm tìm kiếm.'} Khoảng cách là đường chim bay, chỉ tính cho phòng có vị trí.</p>
           <label>Bán kính<select value={draft.maxDistanceKm} onChange={e => update('maxDistanceKm', e.target.value)}><option value="">Không giới hạn</option><option value="1">1 km</option><option value="3">3 km</option><option value="5">5 km</option><option value="10">10 km</option><option value="20">20 km</option><option value="50">50 km</option></select></label>
         </fieldset>
