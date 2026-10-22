@@ -29,6 +29,7 @@ export function DashboardShell({ role, children }: { role: 'tenant' | 'landlord'
     { path: '/landlord/profile', label: 'Hồ sơ', icon: <UserRound size={18} /> },
   ] : [
     { path: '/admin', label: 'Tổng quan', icon: <LayoutDashboard size={18} /> },
+    { path: '/admin/rooms', label: 'Phòng chờ duyệt', icon: <Home size={18} /> },
     { path: '/admin/users', label: 'Người dùng', icon: <UserRound size={18} /> },
     { path: '/admin/amenities', label: 'Tiện nghi', icon: <Home size={18} /> },
     { path: '/admin/reports', label: 'Báo cáo', icon: <ShieldCheck size={18} /> },

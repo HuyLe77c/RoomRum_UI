@@ -11,7 +11,7 @@ export function Overview({ role }: { role: RolePath }) {
   const appointments = useResource<Appointment[]>(role === 'admin' ? null : '/appointments/mine?page=1&pageSize=50')
   const favorites = useResource<Favorite[]>(role === 'tenant' ? '/favorites?page=1&pageSize=50' : null)
   const users = useResource<AdminUser[]>(role === 'admin' ? '/admin/users?page=1&pageSize=50' : null)
-  const reports = useResource<Report[]>(role === 'admin' ? '/reports/mine?page=1&pageSize=50' : null)
+  const reports = useResource<Report[]>(role === 'admin' ? '/reports/pending?page=1&pageSize=50' : null)
   const cards = role === 'tenant' ? [
     { label: 'Phòng đã lưu', value: favorites.data?.length, icon: <Heart />, path: '/tenant/favorites' },
     { label: 'Lịch xem phòng', value: appointments.data?.length, icon: <CalendarDays />, path: '/tenant/appointments' },

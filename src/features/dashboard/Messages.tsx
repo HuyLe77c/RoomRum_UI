@@ -6,6 +6,60 @@ import { Loading, State, useAuth, useResource } from '../../shared/ui'
 import type { Conversation, Message } from '../../shared/types'
 import { Heading, Notice, DataPanel } from './shared'
 
-export function Messages() { const resource = useResource<Conversation[]>('/chat/conversations?page=1&pageSize=50'); const [active, setActive] = useState<string | null>(null); const messages = useResource<Message[]>(active ? `/chat/conversations/${active}/messages?page=1&pageSize=50` : null); const [receiver, setReceiver] = useState(''); const [content, setContent] = useState(''); const [notice, setNotice] = useState(''); const { session } = useAuth()
-  const send = async (event: FormEvent) => { event.preventDefault(); try { const result = await api<{ conversationId: string }>('/chat/messages', json('POST', { conversationId: active, receiver, content })); setActive(result.conversationId); setContent(''); setNotice('Đã gửi tin nhắn.'); resource.reload(); messages.reload() } catch (cause) { setNotice((cause as Error).message) } }
-  return <><Heading eyebrow="KẾT NỐI" title="Tin nhắn" description="Trao đổi trực tiếp qua hệ thống RoomRum." /><Notice text={notice} /><div className="messages-layout"><div className="panel conversations"><h2>Cuộc trò chuyện</h2><DataPanel resource={resource} empty="Chưa có cuộc trò chuyện">{data => data.map(item => <button className={active === item.conversationId ? 'conversation active' : 'conversation'} key={item.conversationId} onClick={() => setActive(item.conversationId)}><MessageCircle size={21} /><span><strong>Cuộc trò chuyện {item.conversationId.slice(0, 8)}…</strong><small>{item.lastMessage?.content || 'Chưa có tin nhắn'}</small></span></button>)}</DataPanel></div><div className="panel message-thread"><h2>{active ? `Cuộc trò chuyện ${active.slice(0, 8)}…` : 'Tin nhắn mới'}</h2><div className="message-scroll">{active && (messages.loading ? <Loading /> : messages.data?.length ? messages.data.map(item => <div key={item.messageId} className={item.sender === session?.userId ? 'bubble own' : 'bubble'}><p>{item.content}</p><small>{item.chatAt ? new Date(item.chatAt).toLocaleString('vi-VN') : ''}</small></div>) : <State title="Chưa có tin nhắn" />)}</div><form className="message-form" onSubmit={send}><label>ID người nhận<input required value={receiver} onChange={e => setReceiver(e.target.value)} placeholder="GUID người nhận" /></label><label>Nội dung<input required value={content} onChange={e => setContent(e.target.value)} placeholder="Nhập tin nhắn…" /></label><button className="button button-primary" type="submit">Gửi</button></form></div></div></> }
+export function Messages() {
+  const resource = useResource<Conversation[]>('/chat/conversations?page=1&pageSize=50')
+  const [active, setActive] = useState<string | null>(null)
+  const messages = useResource<Message[]>(active ? `/chat/conversations/${active}/messages?page=1&pageSize=50` : null)
+  const [receiver, setReceiver] = useState('')
+  const [content, setContent] = useState('')
+  const [notice, setNotice] = useState('')
+  const { session } = useAuth()
+  const chosen = resource.data?.find(item => item.conversationId === active)
+
+  const choose = (item: Conversation) => {
+    setActive(item.conversationId)
+    setReceiver(item.otherUserId || '')
+  }
+  const send = async (event: FormEvent) => {
+    event.preventDefault()
+    try {
+      const result = await api<{ conversationId: string }>('/chat/messages', json('POST', { conversationId: active, receiver, content }))
+      setActive(result.conversationId)
+      setContent('')
+      setNotice('Đã gửi tin nhắn.')
+      resource.reload()
+      messages.reload()
+    } catch (cause) {
+      setNotice((cause as Error).message)
+    }
+  }
+
+  return <>
+    <Heading eyebrow="KẾT NỐI" title="Tin nhắn" description="Trao đổi trực tiếp qua hệ thống RoomRum." />
+    <Notice text={notice} />
+    <div className="messages-layout">
+      <div className="panel conversations">
+        <h2>Cuộc trò chuyện</h2>
+        <DataPanel resource={resource} empty="Chưa có cuộc trò chuyện">{data => data.map(item =>
+          <button className={active === item.conversationId ? 'conversation active' : 'conversation'} key={item.conversationId} onClick={() => choose(item)}>
+            <MessageCircle size={21} />
+            <span><strong>{item.otherUserName || `Cuộc trò chuyện ${item.conversationId.slice(0, 8)}…`}</strong><small>{item.lastMessage?.content || 'Chưa có tin nhắn'}</small></span>
+          </button>
+        )}</DataPanel>
+      </div>
+      <div className="panel message-thread">
+        <h2>{active ? chosen?.otherUserName || `Cuộc trò chuyện ${active.slice(0, 8)}…` : 'Tin nhắn mới'}</h2>
+        <div className="message-scroll">{active && (messages.loading ? <Loading /> : messages.data?.length ? messages.data.map(item =>
+          <div key={item.messageId} className={item.sender === session?.userId ? 'bubble own' : 'bubble'}>
+            <p>{item.content}</p><small>{item.chatAt ? new Date(item.chatAt).toLocaleString('vi-VN') : ''}</small>
+          </div>
+        ) : <State title="Chưa có tin nhắn" />)}</div>
+        <form className="message-form" onSubmit={send}>
+          <label>ID người nhận<input required value={receiver} onChange={e => setReceiver(e.target.value)} placeholder="GUID người nhận" /></label>
+          <label>Nội dung<input required value={content} onChange={e => setContent(e.target.value)} placeholder="Nhập tin nhắn…" /></label>
+          <button className="button button-primary" type="submit">Gửi</button>
+        </form>
+      </div>
+    </div>
+  </>
+}

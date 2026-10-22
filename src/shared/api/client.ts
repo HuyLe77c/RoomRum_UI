@@ -3,7 +3,12 @@ import type { Session } from '../types'
 const SESSION_KEY = 'roomrum-session'
 
 export function getSession(): Session | null {
-  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null') as Session | null } catch { return null }
+  try {
+    const session = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null') as Session | null
+    if (session && typeof session.token === 'string' && session.token.length > 0) return session
+    sessionStorage.removeItem(SESSION_KEY)
+    return null
+  } catch { return null }
 }
 export function setSession(session: Session | null) {
   if (session) sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
