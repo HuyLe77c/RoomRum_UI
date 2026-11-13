@@ -50,7 +50,7 @@ export function Tenancies({ role }: { role: RolePath }) {
       <Heading
         eyebrow={role === 'tenant' ? 'NGƯỜI THUÊ' : 'CHỦ PHÒNG'}
         title={role === 'tenant' ? 'Phòng đang thuê' : 'Quản lý người thuê'}
-        description="Lời mời, trạng thái thuê và lịch sử được lấy từ RoomRum."
+        description={role === 'tenant' ? 'Theo dõi lời mời và trạng thái thuê phòng của bạn.' : 'Lời mời, trạng thái thuê và lịch sử được lấy từ RoomRum.'}
       />
       <Notice text={notice} />
 
@@ -98,7 +98,7 @@ export function Tenancies({ role }: { role: RolePath }) {
                   <h2>{item.roomTitle || 'Phòng trọ'}</h2>
                   <p>Bắt đầu: {date(item.hiredAt)}</p>
                   <small>Người thuê: {item.tenantName || item.userId}</small>
-                  {history?.key === `${item.roomId}-${item.userId}` && (
+                  {role !== 'tenant' && history?.key === `${item.roomId}-${item.userId}` && (
                     <div className="history-list">
                       {history.items.map((period, index) => (
                         <p key={index}>{date(period.hiredAt)} – {date(period.leftAt)} · {period.status}</p>
@@ -113,14 +113,16 @@ export function Tenancies({ role }: { role: RolePath }) {
                       Chấp nhận
                     </button>
                   )}
-                  {['Pending', 'Active'].includes(item.status) && (
+                  {role !== 'tenant' && ['Pending', 'Active'].includes(item.status) && (
                     <button className="button button-secondary small" onClick={() => act(`/room-tenants/${item.roomId}/${item.userId}/end`)}>
                       {item.status === 'Pending' ? 'Hủy lời mời' : 'Kết thúc thuê'}
                     </button>
                   )}
-                  <button className="button button-ghost small" onClick={() => loadHistory(item)}>
-                    Lịch sử
-                  </button>
+                  {role !== 'tenant' && (
+                    <button className="button button-ghost small" onClick={() => loadHistory(item)}>
+                      Lịch sử
+                    </button>
+                  )}
                 </div>
               </article>
             ))}

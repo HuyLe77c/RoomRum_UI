@@ -3,5 +3,38 @@ import { api, json } from '../../shared/api/client'
 import { date, useResource } from '../../shared/ui'
 import type { AdminUser } from '../../shared/types'
 import { Heading, Badge, Notice, DataPanel } from './shared'
+import { RegistrationFilesDialog } from './RegistrationFilesDialog'
 
-export function UsersPage() { const resource = useResource<AdminUser[]>('/admin/users?page=1&pageSize=50'); const [notice, setNotice] = useState(''); const update = async (id: string, field: 'status' | 'role', value: string) => { try { await api(`/admin/users/${id}/${field}`, json('PATCH', { [field]: value })); resource.reload(); setNotice('Đã cập nhật tài khoản.') } catch (cause) { setNotice((cause as Error).message) } }; return <><Heading eyebrow="QUẢN TRỊ" title="Người dùng" description="Quản lý quyền và trạng thái tài khoản." /><Notice text={notice} /><DataPanel resource={resource} empty="Chưa có người dùng">{data => <div className="panel table-wrap"><table><thead><tr><th>Người dùng</th><th>Vai trò</th><th>Trạng thái</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead><tbody>{data.map(item => <tr key={item.userId}><td><strong>{item.name}</strong><small>{item.email || 'Chưa có email'}</small></td><td>{item.role}</td><td><Badge status={item.status} label={item.status === 'Active' ? 'Hoạt động' : item.status === 'Inactive' ? 'Chờ kích hoạt' : undefined} /></td><td>{date(item.createdAt)}</td><td><div className="table-actions"><select aria-label={`Vai trò của ${item.name}`} value={item.role} onChange={e => update(item.userId, 'role', e.target.value)}><option value="Tenant">Người thuê</option><option value="Landlord">Chủ phòng</option><option value="Admin">Quản trị</option></select><select aria-label={`Trạng thái của ${item.name}`} value={item.status || 'Inactive'} onChange={e => update(item.userId, 'status', e.target.value)}><option value="Inactive">Chờ kích hoạt</option><option value="Active">Hoạt động</option><option value="Locked">Khóa</option></select></div></td></tr>)}</tbody></table></div>}</DataPanel></> }
+export function UsersPage() {
+  const resource = useResource<AdminUser[]>('/admin/users?page=1&pageSize=50')
+  const [notice, setNotice] = useState('')
+  const [selectedLandlord, setSelectedLandlord] = useState<AdminUser | null>(null)
+  const update = async (id: string, field: 'status' | 'role', value: string) => {
+    try {
+      await api(`/admin/users/${id}/${field}`, json('PATCH', { [field]: value }))
+      resource.reload()
+      setNotice('Đã cập nhật tài khoản.')
+    } catch (cause) { setNotice((cause as Error).message) }
+  }
+
+  return <>
+    <Heading eyebrow="QUẢN TRỊ" title="Người dùng" description="Quản lý quyền và trạng thái tài khoản." />
+    <Notice text={notice} />
+    <DataPanel resource={resource} empty="Chưa có người dùng">{data =>
+      <div className="panel table-wrap"><table><thead><tr><th>Người dùng</th><th>Vai trò</th><th>Trạng thái</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead><tbody>{data.map(item =>
+        <tr key={item.userId}>
+          <td><strong>{item.name}</strong><small>{item.email || 'Chưa có email'}</small></td>
+          <td>{item.role}</td>
+          <td><Badge status={item.status} label={item.status === 'Active' ? 'Hoạt động' : item.status === 'Inactive' ? 'Chờ kích hoạt' : undefined} /></td>
+          <td>{date(item.createdAt)}</td>
+          <td><div className="table-actions">
+            {item.role === 'Landlord' && <button className="button button-secondary small" type="button" onClick={() => setSelectedLandlord(item)}>Xem ảnh đăng ký</button>}
+            <select aria-label={`Vai trò của ${item.name}`} value={item.role} onChange={e => update(item.userId, 'role', e.target.value)}><option value="Tenant">Người thuê</option><option value="Landlord">Chủ phòng</option><option value="Admin">Quản trị</option></select>
+            <select aria-label={`Trạng thái của ${item.name}`} value={item.status || 'Inactive'} onChange={e => update(item.userId, 'status', e.target.value)}><option value="Inactive">Chờ kích hoạt</option><option value="Active">Hoạt động</option><option value="Locked">Khóa</option></select>
+          </div></td>
+        </tr>)}</tbody></table></div>}
+    </DataPanel>
+    {selectedLandlord && <RegistrationFilesDialog key={selectedLandlord.userId} user={selectedLandlord} onClose={() => setSelectedLandlord(null)} />}
+  </>
+}
+
