@@ -3,10 +3,10 @@ import { Route, Routes } from 'react-router-dom'
 import { AuthProvider, Footer, Header, State } from '../shared/ui'
 import { HomePage } from '../features/home/HomePage'
 
-const MapPage = lazy(() => import('../features/maps/MapPage').then(module => ({ default: module.MapPage })))
 const SearchPage = lazy(() => import('../features/search/AdvancedSearchPage').then(module => ({ default: module.SearchPage })))
 const DetailPage = lazy(() => import('../features/rooms/DetailPage').then(module => ({ default: module.DetailPage })))
 const SharingPage = lazy(() => import('../features/sharing/SharingPage').then(module => ({ default: module.SharingPage })))
+const SharingDetailPage = lazy(() => import('../features/sharing/SharingDetailPage').then(module => ({ default: module.SharingDetailPage })))
 const AuthPage = lazy(() => import('../features/auth/AuthPage').then(module => ({ default: module.AuthPage })))
 const DashboardRouter = lazy(() => import('../features/dashboard/DashboardRouter').then(module => ({ default: module.DashboardRouter })))
 
@@ -15,12 +15,13 @@ export default function App() {
     <Route path="/" element={<HomePage />} />
     <Route path="/search" element={<SearchPage />} />
     <Route path="/rooms/:id" element={<DetailPage />} />
-    <Route path="/map" element={<MapPage />} />
     <Route path="/sharing" element={<SharingPage />} />
+    <Route path="/sharing/:id" element={<SharingDetailPage />} />
     <Route path="/login" element={<AuthPage mode="login" />} />
     <Route path="/register" element={<AuthPage mode="register" />} />
     <Route path="/tenant" element={<DashboardRouter role="tenant" />} />
     <Route path="/tenant/:section" element={<DashboardRouter role="tenant" />} />
+    <Route path="/tenant/:section/:id" element={<DashboardRouter role="tenant" />} />
     <Route path="/landlord" element={<DashboardRouter role="landlord" />} />
     <Route path="/landlord/:section" element={<DashboardRouter role="landlord" />} />
     <Route path="/admin" element={<DashboardRouter role="admin" />} />

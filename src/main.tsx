@@ -6,6 +6,8 @@ import './styles/base.css'
 import './styles/search.css'
 import './styles/auth.css'
 import './styles/dashboard.css'
+import './styles/sharing-form.css'
+import './styles/sharing.css'
 import './styles/landlord.css'
 import './styles/overrides.css'
 
