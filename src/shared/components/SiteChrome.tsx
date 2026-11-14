@@ -14,7 +14,6 @@ export function Header() {
     <nav className={open ? 'site-nav open' : 'site-nav'} aria-label="Điều hướng chính">
       <NavLink to="/" end onClick={() => setOpen(false)}>Trang chủ</NavLink>
       <NavLink to="/search" onClick={() => setOpen(false)}>Tìm phòng</NavLink>
-      <NavLink to="/map" onClick={() => setOpen(false)}>Bản đồ</NavLink>
       <NavLink to="/sharing" onClick={() => setOpen(false)}>Ở ghép</NavLink>
     </nav>
     <div className="header-actions">
@@ -24,4 +23,4 @@ export function Header() {
   </div></header>
 }
 
-export function Footer() { return <footer className="site-footer"><div className="container footer-grid"><div><Logo /><p>Không gian sống phù hợp bắt đầu từ thông tin rõ ràng.</p></div><div><strong>Khám phá</strong><Link to="/search">Tìm phòng</Link><Link to="/map">Tra cứu bản đồ</Link><Link to="/sharing">Tìm người ở ghép</Link></div><div><strong>Tài khoản</strong><Link to="/login">Đăng nhập</Link><Link to="/register">Tạo tài khoản</Link></div><div><strong>RoomRum</strong><p>Thông tin phòng và tài khoản được tải từ hệ thống RoomRum.</p></div></div><div className="container footer-bottom">© {new Date().getFullYear()} RoomRum</div></footer> }
+export function Footer() { return <footer className="site-footer"><div className="container footer-grid"><div><Logo /><p>Không gian sống phù hợp bắt đầu từ thông tin rõ ràng.</p></div><div><strong>Khám phá</strong><Link to="/search">Tìm phòng</Link><Link to="/sharing">Tìm người ở ghép</Link></div><div><strong>Tài khoản</strong><Link to="/login">Đăng nhập</Link><Link to="/register">Tạo tài khoản</Link></div><div><strong>RoomRum</strong><p>Thông tin phòng và tài khoản được tải từ hệ thống RoomRum.</p></div></div><div className="container footer-bottom">© {new Date().getFullYear()} RoomRum</div></footer> }

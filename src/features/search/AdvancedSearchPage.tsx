@@ -1,22 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { Circle, MapContainer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet'
-import L from 'leaflet'
-import { ChevronLeft, ChevronRight, Compass, MapPin, Search, SlidersHorizontal } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
+import { ChevronLeft, ChevronRight, Search, SlidersHorizontal } from 'lucide-react'
 import { api } from '../../shared/api/client'
-import { OpenFreeMapLayer } from '../maps/OpenFreeMapLayer'
-import { parseMapPoint } from '../maps/mapCoordinates'
 import { ErrorState, Footer, Header, Loading, RoomCard, State, money, useAuth, useResource } from '../../shared/ui'
 import type { Amenity, RoomSearch } from '../../shared/types'
 
 type Filters = {
   q: string; type: string; minPrice: string; maxPrice: string; minArea: string; maxArea: string
   maxDeposit: string; maxMoveInCost: string; maxMonthlyCost: string; occupants: string
-  monthlyKwh: string; amenityIds: string[]; locationLabel: string
-  latitude: string; longitude: string; maxDistanceKm: string; sort: string
+  monthlyKwh: string; amenityIds: string[]; sort: string
 }
-type LocationSuggestion = { displayName: string; latitude: number; longitude: number; isApproximate: boolean }
 
 function readFilters(params: URLSearchParams): Filters {
   return {
@@ -26,8 +20,6 @@ function readFilters(params: URLSearchParams): Filters {
     maxDeposit: params.get('maxDeposit') || '', maxMoveInCost: params.get('maxMoveInCost') || '',
     maxMonthlyCost: params.get('maxMonthlyCost') || '', occupants: params.get('occupants') || '1',
     monthlyKwh: params.get('monthlyKwh') || '100', amenityIds: params.getAll('amenityIds'),
-    locationLabel: params.get('locationLabel') || '', latitude: params.get('latitude') || '',
-    longitude: params.get('longitude') || '', maxDistanceKm: params.get('maxDistanceKm') || '',
     sort: params.get('sort') || 'relevance',
   }
 }
@@ -36,7 +28,7 @@ function buildParams(filters: Filters, page = 1): URLSearchParams {
   const params = new URLSearchParams()
   const keys: (keyof Filters)[] = [
     'q', 'type', 'minPrice', 'maxPrice', 'minArea', 'maxArea', 'maxDeposit',
-    'maxMoveInCost', 'maxMonthlyCost', 'latitude', 'longitude', 'maxDistanceKm', 'sort',
+    'maxMoveInCost', 'maxMonthlyCost', 'sort',
   ]
   for (const key of keys) {
     const value = filters[key]
@@ -47,33 +39,9 @@ function buildParams(filters: Filters, page = 1): URLSearchParams {
     params.set('occupants', filters.occupants || '1')
     params.set('monthlyKwh', filters.monthlyKwh || '100')
   }
-  if (filters.latitude && filters.longitude && filters.locationLabel)
-    params.set('locationLabel', filters.locationLabel)
   for (const id of filters.amenityIds) params.append('amenityIds', id)
   params.set('page', String(page))
   return params
-}
-
-const selectedSearchIcon = L.divIcon({
-  className: 'room-selected-marker',
-  html: '<span aria-hidden="true"></span>',
-  iconSize: [36, 44],
-  iconAnchor: [18, 44],
-  popupAnchor: [0, -38],
-})
-
-function MapCenter({ point }: { point: [number, number] | null }) {
-  const map = useMap()
-  useEffect(() => {
-    if (!point) return
-    map.setView(point, 14)
-  }, [map, point])
-  return null
-}
-
-function MapSelection({ onPick }: { onPick: (lat: number, lon: number) => void }) {
-  useMapEvents({ click: event => onPick(event.latlng.lat, event.latlng.lng) })
-  return null
 }
 
 export function SearchPage() {
@@ -81,85 +49,17 @@ export function SearchPage() {
   const serializedParams = params.toString()
   const [draft, setDraft] = useState<Filters>(() => readFilters(params))
   const [notice, setNotice] = useState('')
-  const [locating, setLocating] = useState(false)
-  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([])
-  const [suggesting, setSuggesting] = useState(false)
-  const [activeSuggestion, setActiveSuggestion] = useState(0)
-  const suggestionRequest = useRef(0)
   const { session } = useAuth()
   const { data: amenities } = useResource<Amenity[]>('/rooms/amenities?page=1&pageSize=100')
   useEffect(() => setDraft(readFilters(new URLSearchParams(serializedParams))), [serializedParams])
 
   const page = Math.max(1, Number(params.get('page') || 1) || 1)
-  const urlPoint = parseMapPoint(params.get('latitude'), params.get('longitude'))
-  const invalidCoordinates = (params.has('latitude') || params.has('longitude')) && !urlPoint
-  const rawRadius = params.get('maxDistanceKm')
-  const invalidRadius = rawRadius !== null && (!urlPoint || !rawRadius.trim() ||
-    !Number.isFinite(Number(rawRadius)) || Number(rawRadius) <= 0 || Number(rawRadius) > 100)
-  const invalidSort = params.get('sort') === 'distance' && !urlPoint
-  useEffect(() => {
-    if (!invalidCoordinates && !invalidRadius && !invalidSort) return
-    const next = new URLSearchParams(params)
-    if (invalidCoordinates) { next.delete('latitude'); next.delete('longitude'); next.delete('locationLabel') }
-    if (invalidRadius) next.delete('maxDistanceKm')
-    if (invalidSort) next.delete('sort')
-    setNotice('Liên kết có tọa độ hoặc bán kính không hợp lệ; đã bỏ phần tìm kiếm vị trí.')
-    setParams(next, { replace: true })
-  }, [serializedParams, invalidCoordinates, invalidRadius, invalidSort, setParams])
   const apiParams = new URLSearchParams(params)
-  if (invalidCoordinates) { apiParams.delete('latitude'); apiParams.delete('longitude') }
-  if (invalidRadius) apiParams.delete('maxDistanceKm')
-  if (invalidSort) apiParams.delete('sort')
-  apiParams.delete('locationLabel')
+  for (const key of ['latitude', 'longitude', 'maxDistanceKm', 'locationLabel']) apiParams.delete(key)
+  if (apiParams.get('sort') === 'distance') apiParams.delete('sort')
   apiParams.set('page', String(page))
   apiParams.set('pageSize', '12')
   const { data, loading, error, reload } = useResource<RoomSearch>(`/rooms?${apiParams}`)
-  const point = useMemo(() => parseMapPoint(draft.latitude, draft.longitude), [draft.latitude, draft.longitude])
-  const radiusKm = Number(draft.maxDistanceKm) > 0 ? Number(draft.maxDistanceKm) : null
-
-  useEffect(() => {
-    const query = draft.locationLabel.trim()
-    if (query.length < 3 || point) { setSuggestions([]); setSuggesting(false); return }
-    const requestId = ++suggestionRequest.current
-    const controller = new AbortController()
-    const timer = window.setTimeout(async () => {
-      setSuggesting(true)
-      try {
-        const places = await api<LocationSuggestion[]>(`/locations/suggest?q=${encodeURIComponent(query)}`, { signal: controller.signal })
-        if (requestId === suggestionRequest.current) { setSuggestions(places); setActiveSuggestion(0) }
-      } catch (cause) {
-        if (requestId === suggestionRequest.current && !controller.signal.aborted) setNotice((cause as Error).message)
-      } finally {
-        if (requestId === suggestionRequest.current && !controller.signal.aborted) setSuggesting(false)
-      }
-    }, 500)
-    return () => { window.clearTimeout(timer); controller.abort() }
-  }, [draft.locationLabel, point])
-
-  const update = (key: keyof Filters, value: string) => {
-    if (key === 'locationLabel') { suggestionRequest.current++; setSuggestions([]); setNotice('') }
-    setDraft(previous => key === 'locationLabel'
-      ? { ...previous, locationLabel: value, latitude: '', longitude: '' }
-      : { ...previous, [key]: value })
-  }
-  const pickLocation = (lat: number, lon: number, label = 'Điểm đã chọn trên bản đồ') => {
-    suggestionRequest.current++; setSuggestions([])
-    setDraft(previous => ({ ...previous, latitude: lat.toFixed(6), longitude: lon.toFixed(6),
-      locationLabel: label, maxDistanceKm: previous.maxDistanceKm || '5' }))
-    setNotice('Đã chọn tâm và bán kính tìm kiếm. Bấm “Áp dụng bộ lọc” để xem kết quả.')
-  }
-  const findLocation = async () => {
-    const place = draft.locationLabel.trim()
-    if (!place) { setNotice('Nhập địa điểm trước khi tra vị trí.'); return }
-    if (suggestions.length) { const choice = suggestions[activeSuggestion]; pickLocation(choice.latitude, choice.longitude, choice.displayName); return }
-    setLocating(true); setNotice('')
-    try {
-      const places = await api<LocationSuggestion[]>(`/locations/suggest?q=${encodeURIComponent(place)}`)
-      if (places.length === 1) pickLocation(places[0].latitude, places[0].longitude, places[0].displayName)
-      else if (places.length) { setSuggestions(places); setActiveSuggestion(0); setNotice('Có nhiều địa điểm phù hợp. Hãy chọn đúng vị trí trong danh sách.') }
-      else setNotice('Không tìm thấy địa điểm. Hãy nhập cụ thể hơn hoặc chọn trực tiếp trên bản đồ.')
-    } catch (cause) { setNotice((cause as Error).message) } finally { setLocating(false) }
-  }
   const apply = (event: FormEvent) => {
     event.preventDefault()
     const pairs: [string, string, string][] = [
@@ -172,11 +72,9 @@ export function SearchPage() {
         setNotice(`Giá trị từ của ${label} phải nhỏ hơn hoặc bằng giá trị đến.`); return
       }
     }
-    if ((draft.maxDistanceKm || draft.sort === 'distance') && !point) {
-      setNotice('Chọn tâm tìm kiếm trên bản đồ trước khi lọc hoặc sắp xếp theo khoảng cách.'); return
-    }
     setNotice(''); setParams(buildParams(draft))
   }
+  const update = (key: keyof Filters, value: string) => setDraft(previous => ({ ...previous, [key]: value }))
   const changeSort = (value: string) => setParams(buildParams({ ...readFilters(params), sort: value }))
   const changePage = (nextPage: number) => setParams(buildParams(readFilters(params), nextPage))
   const favorite = async (id: string) => {
@@ -186,7 +84,7 @@ export function SearchPage() {
   }
 
   return <><Header /><main className="search-page"><div className="container">
-    <div className="page-title"><span className="section-label">TÌM PHÒNG NÂNG CAO</span><h1>Tìm nơi ở vừa nhu cầu, vừa ngân sách</h1><p>Kết hợp giá, chi phí sinh hoạt, tiện ích và khoảng cách trong cùng một lần tìm.</p></div>
+    <div className="page-title"><span className="section-label">TÌM PHÒNG NÂNG CAO</span><h1>Tìm nơi ở vừa nhu cầu, vừa ngân sách</h1><p>Kết hợp giá, chi phí sinh hoạt và tiện ích trong cùng một lần tìm.</p></div>
     <div className="search-layout advanced-search-layout"><aside className="filter-panel advanced-filter-panel">
       <div className="filter-title"><SlidersHorizontal size={20} /><h2>Bộ lọc chi tiết</h2></div>
       <form onSubmit={apply} className="form-stack advanced-filter-form">
@@ -207,27 +105,11 @@ export function SearchPage() {
           <div className="amenity-checks">{amenities?.map(item => <label key={item.amenityId}><input type="checkbox" checked={draft.amenityIds.includes(item.amenityId)} onChange={e => setDraft(previous => ({ ...previous, amenityIds: e.target.checked ? [...previous.amenityIds, item.amenityId] : previous.amenityIds.filter(id => id !== item.amenityId) }))} />{item.amenityName}</label>) || <span>Đang tải tiện ích…</span>}</div>
           <p className="filter-explainer">Phòng cần có tất cả tiện ích đã chọn.</p>
         </fieldset>
-        <fieldset><legend>Khoảng cách</legend>
-          <div className="address-autocomplete search-location-autocomplete"><label htmlFor="search-location">Địa điểm làm tâm</label><input id="search-location" value={draft.locationLabel} onChange={e => update('locationLabel', e.target.value)} placeholder="Ví dụ: Lê Văn Việt, TP. Hồ Chí Minh" autoComplete="off" role="combobox" aria-autocomplete="list" aria-expanded={suggestions.length > 0} aria-controls="search-location-suggestions" aria-activedescendant={suggestions.length ? `search-location-option-${activeSuggestion}` : undefined} onKeyDown={event => {
-            if (event.key === 'Escape') { setSuggestions([]); return }
-            if (!suggestions.length) return
-            if (event.key === 'ArrowDown') { event.preventDefault(); setActiveSuggestion(index => (index + 1) % suggestions.length) }
-            if (event.key === 'ArrowUp') { event.preventDefault(); setActiveSuggestion(index => (index - 1 + suggestions.length) % suggestions.length) }
-            if (event.key === 'Enter') { event.preventDefault(); const place = suggestions[activeSuggestion]; pickLocation(place.latitude, place.longitude, place.displayName) }
-          }} />
-          {suggesting && <small className="address-suggesting" role="status">Đang tìm địa điểm…</small>}
-          {suggestions.length > 0 && <div id="search-location-suggestions" className="address-suggestions" role="listbox" aria-label="Địa điểm gợi ý">{suggestions.map((place, index) => <button id={`search-location-option-${index}`} className={index === activeSuggestion ? 'active' : ''} role="option" aria-selected={index === activeSuggestion} type="button" key={`${place.displayName}-${place.latitude}-${place.longitude}`} onMouseEnter={() => setActiveSuggestion(index)} onClick={() => pickLocation(place.latitude, place.longitude, place.displayName)}><MapPin size={16} /><span>{place.displayName}{place.isApproximate && <small>Vị trí gần đúng</small>}</span></button>)}</div>}
-          </div>
-          <button type="button" className="button button-secondary full" disabled={locating} onClick={findLocation}><Search size={16} />{locating ? 'Đang tra vị trí…' : 'Tìm vị trí'}</button>
-          <div className="location-picker" aria-label="Chọn tâm tìm kiếm trên bản đồ"><MapContainer center={[10.8, 106.7]} zoom={11} scrollWheelZoom={false} className="location-picker-map"><OpenFreeMapLayer onFallback={() => setNotice('Lớp bản đồ chi tiết không tải được; đã chuyển sang bản đồ cơ bản. Bạn vẫn có thể chọn tâm tìm kiếm.')} /><MapCenter point={point} /><MapSelection onPick={pickLocation} />{point && radiusKm && <Circle center={point} radius={radiusKm * 1000} pathOptions={{ color: '#1e63b4', fillColor: '#1e63b4', fillOpacity: 0.12, weight: 2 }} />}{point && <Marker position={point} icon={selectedSearchIcon}><Popup>{draft.locationLabel}</Popup></Marker>}</MapContainer></div>
-          <p className="filter-explainer">{point ? `Tâm đã chọn: ${draft.locationLabel}. ${radiusKm ? `Vòng tròn ${radiusKm} km hiển thị trên bản đồ.` : ''}` : 'Chọn địa điểm gợi ý hoặc nhấn vào bản đồ để đặt tâm tìm kiếm.'} Khoảng cách là đường chim bay, chỉ tính cho phòng có vị trí.</p>
-          <label>Bán kính<select value={draft.maxDistanceKm} onChange={e => update('maxDistanceKm', e.target.value)}><option value="">Không giới hạn</option><option value="1">1 km</option><option value="3">3 km</option><option value="5">5 km</option><option value="10">10 km</option><option value="20">20 km</option><option value="50">50 km</option></select></label>
-        </fieldset>
         <button className="button button-primary full" type="submit"><Search size={17} /> Áp dụng bộ lọc</button>
         <button type="button" className="button button-ghost full" onClick={() => { setNotice(''); setParams({}) }}>Xóa bộ lọc</button>
       </form>
-    </aside><section className="search-results"><div className="result-toolbar advanced-result-toolbar"><div><strong>{loading ? 'Đang tìm…' : `${data?.total ?? 0} phòng phù hợp`}</strong><span>{params.get('q') ? `Kết quả cho “${params.get('q')}”` : 'Tất cả khu vực'}</span></div><div className="result-toolbar-actions"><label>Sắp xếp<select aria-label="Sắp xếp kết quả" value={params.get('sort') || 'relevance'} onChange={e => changeSort(e.target.value)}><option value="relevance">Mặc định</option><option value="priceAsc">Giá thấp trước</option><option value="priceDesc">Giá cao trước</option><option value="areaDesc">Diện tích lớn trước</option><option value="monthlyCostAsc">Chi phí tháng thấp trước</option><option value="distance" disabled={!params.get('latitude')}>Gần tâm nhất</option></select></label><Link to={`/map?${params.toString()}`} className="button button-secondary small"><MapPin size={16} /> Bản đồ</Link></div></div>
+    </aside><section className="search-results"><div className="result-toolbar advanced-result-toolbar"><div><strong>{loading ? 'Đang tìm…' : `${data?.total ?? 0} phòng phù hợp`}</strong><span>{params.get('q') ? `Kết quả cho “${params.get('q')}”` : 'Tất cả khu vực'}</span></div><div className="result-toolbar-actions"><label>Sắp xếp<select aria-label="Sắp xếp kết quả" value={params.get('sort') || 'relevance'} onChange={e => changeSort(e.target.value)}><option value="relevance">Mặc định</option><option value="priceAsc">Giá thấp trước</option><option value="priceDesc">Giá cao trước</option><option value="areaDesc">Diện tích lớn trước</option><option value="monthlyCostAsc">Chi phí tháng thấp trước</option></select></label></div></div>
       {notice && <div className="inline-notice" role="status">{notice}</div>}
-      {loading ? <Loading /> : error ? <ErrorState message={error} retry={reload} /> : data?.items.length ? <><div className="room-grid results-grid">{data.items.map(room => <div className="advanced-room-result" key={room.roomId}><RoomCard room={room} onFavorite={favorite} /><div className="advanced-room-metrics">{room.distanceKm != null && <span><Compass size={14} /> {room.distanceKm.toLocaleString('vi-VN')} km</span>}{room.estimatedMonthlyCost != null && <span>Ước tính {money(room.estimatedMonthlyCost)} / tháng</span>}</div></div>)}</div><div className="pagination"><button disabled={page <= 1} onClick={() => changePage(page - 1)}><ChevronLeft size={18} /> Trước</button><span>Trang {page} / {Math.max(1, Math.ceil(data.total / 12))}</span><button disabled={page * 12 >= data.total} onClick={() => changePage(page + 1)}>Tiếp <ChevronRight size={18} /></button></div></> : <State title="Không tìm thấy phòng phù hợp" description="Thử nới rộng khoảng giá, bán kính hoặc bỏ bớt tiện ích." action={<button className="button button-secondary" onClick={() => setParams({})}>Xóa bộ lọc</button>} />}
+      {loading ? <Loading /> : error ? <ErrorState message={error} retry={reload} /> : data?.items.length ? <><div className="room-grid results-grid">{data.items.map(room => <div className="advanced-room-result" key={room.roomId}><RoomCard room={room} onFavorite={favorite} /><div className="advanced-room-metrics">{room.estimatedMonthlyCost != null && <span>Ước tính {money(room.estimatedMonthlyCost)} / tháng</span>}</div></div>)}</div><div className="pagination"><button disabled={page <= 1} onClick={() => changePage(page - 1)}><ChevronLeft size={18} /> Trước</button><span>Trang {page} / {Math.max(1, Math.ceil(data.total / 12))}</span><button disabled={page * 12 >= data.total} onClick={() => changePage(page + 1)}>Tiếp <ChevronRight size={18} /></button></div></> : <State title="Không tìm thấy phòng phù hợp" description="Thử nới rộng khoảng giá hoặc bỏ bớt tiện ích." action={<button className="button button-secondary" onClick={() => setParams({})}>Xóa bộ lọc</button>} />}
     </section></div></div></main><Footer /></>
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { Bell, Heart, Home, LayoutDashboard, LogOut, Menu, MessageCircle, ShieldCheck, UserRound, X } from 'lucide-react'
+import { Bell, Heart, Home, LayoutDashboard, LogOut, Menu, MessageCircle, Search, ShieldCheck, UserRound, X } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import { Logo } from './SiteChrome'
 
@@ -11,10 +11,12 @@ export function DashboardShell({ role, children }: { role: 'tenant' | 'landlord'
   const [menuOpen, setMenuOpen] = useState(false)
   const items: MenuItem[] = role === 'tenant' ? [
     { path: '/tenant', label: 'Tổng quan', icon: <LayoutDashboard size={18} /> },
+    { path: '/tenant/rooms', label: 'Danh sách phòng', icon: <Search size={18} /> },
     { path: '/tenant/favorites', label: 'Phòng yêu thích', icon: <Heart size={18} /> },
     { path: '/tenant/appointments', label: 'Lịch xem phòng', icon: <Bell size={18} /> },
     { path: '/tenant/tenancies', label: 'Phòng đang thuê', icon: <Home size={18} /> },
-    { path: '/tenant/sharing', label: 'Ở ghép', icon: <UserRound size={18} /> },
+    { path: '/tenant/sharing', label: 'Tạo tin ở ghép', icon: <UserRound size={18} /> },
+    { path: '/tenant/sharing-requests', label: 'Tin yêu cầu ở ghép', icon: <UserRound size={18} /> },
     { path: '/tenant/repairs', label: 'Yêu cầu sửa chữa', icon: <ShieldCheck size={18} /> },
     { path: '/tenant/reports', label: 'Báo cáo', icon: <ShieldCheck size={18} /> },
     { path: '/tenant/messages', label: 'Tin nhắn', icon: <MessageCircle size={18} /> },
