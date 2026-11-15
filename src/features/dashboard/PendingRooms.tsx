@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api, json } from '../../shared/api/client'
 import { useResource } from '../../shared/ui'
 import { DataPanel, Heading, Notice } from './shared'
@@ -22,7 +23,7 @@ export function PendingRooms() {
     <DataPanel resource={rooms} empty="Không có phòng chờ duyệt">{items =>
       <div className="record-list">{items.map(room => <article className="panel record" key={room.roomId}>
         <div className="record-main"><h2>{room.title || 'Phòng chưa có tiêu đề'}</h2><p>{room.address || 'Chưa có địa chỉ'}</p><small>Chủ phòng: {room.ownerName || 'Chưa cập nhật tên'}</small></div>
-        <div className="record-actions"><button className="button button-primary small" disabled={busy === room.roomId} onClick={() => review(room.roomId, 'Available')}>Duyệt</button>
+        <div className="record-actions"><Link className="button button-secondary small" to={`/admin/rooms/${room.roomId}`}>Xem chi tiết</Link><button className="button button-primary small" disabled={busy === room.roomId} onClick={() => review(room.roomId, 'Available')}>Duyệt</button>
           <button className="button button-ghost small" disabled={busy === room.roomId} onClick={() => review(room.roomId, 'Cancelled')}>Từ chối</button></div>
       </article>)}</div>}</DataPanel></>
 }

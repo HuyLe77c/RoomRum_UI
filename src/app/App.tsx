@@ -23,8 +23,10 @@ export default function App() {
     <Route path="/tenant/:section" element={<DashboardRouter role="tenant" />} />
     <Route path="/tenant/:section/:id" element={<DashboardRouter role="tenant" />} />
     <Route path="/landlord" element={<DashboardRouter role="landlord" />} />
+    <Route path="/landlord/:section/:id" element={<DashboardRouter role="landlord" />} />
     <Route path="/landlord/:section" element={<DashboardRouter role="landlord" />} />
     <Route path="/admin" element={<DashboardRouter role="admin" />} />
+    <Route path="/admin/:section/:id" element={<DashboardRouter role="admin" />} />
     <Route path="/admin/:section" element={<DashboardRouter role="admin" />} />
     <Route path="*" element={<><Header /><main className="container generic-page"><State title="Không tìm thấy trang" description="Đường dẫn này không tồn tại trên RoomRum." /></main><Footer /></>} />
   </Routes></Suspense></AuthProvider>
