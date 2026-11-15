@@ -87,6 +87,14 @@
   box-shadow: 0 0 0 3px #4382cf20;
 }
 
+.sharing-create-fields input[readonly],
+.sharing-create-fields input[readonly]:focus {
+  background: #f4f7fb;
+  border-color: #dce6f1;
+  box-shadow: none;
+  cursor: default;
+}
+
 .sharing-create-fields textarea {
   min-height: 112px;
   resize: vertical;
