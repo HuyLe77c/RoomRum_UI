@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, House, Users } from 'lucide-react'
@@ -11,26 +11,21 @@ export function MySharing() {
   const resource = useResource<Sharing[]>('/sharings?page=1&pageSize=50')
   const tenancies = useResource<Tenancy[]>('/room-tenants/mine?page=1&pageSize=50')
   const { session } = useAuth()
-  const [form, setForm] = useState({ roomId: '', title: '', quantity: '1', gender: '', sharingFee: '', introduction: '', rule: '' })
+  const [form, setForm] = useState({ title: '', quantity: '1', gender: '', sharingFee: '', introduction: '', rule: '' })
   const [notice, setNotice] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const mine = resource.data?.filter(item => item.userId === session?.userId) || []
-  const activeRooms = tenancies.data?.filter(item => item.status === 'Active') || []
-
-  // Auto-select room if tenant only rents 1 active room
-  useEffect(() => {
-    if (!form.roomId && activeRooms.length === 1) {
-      setForm(prev => ({ ...prev, roomId: activeRooms[0].roomId }))
-    }
-  }, [activeRooms, form.roomId])
+  const activeRooms = tenancies.data?.filter(item => item.userId === session?.userId && item.status === 'Active') || []
+  const currentRoom = activeRooms.length === 1 ? activeRooms[0] : null
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
+    if (!currentRoom) return
     setSubmitting(true)
     try {
-      await api('/sharings', json('POST', { ...form, quantity: Number(form.quantity), sharingFee: form.sharingFee ? Number(form.sharingFee) : null }))
+      await api('/sharings', json('POST', { ...form, roomId: currentRoom.roomId, quantity: Number(form.quantity), sharingFee: form.sharingFee ? Number(form.sharingFee) : null }))
       setNotice('Đã đăng lời mời ở ghép.')
-      setForm({ roomId: activeRooms.length === 1 ? activeRooms[0].roomId : '', title: '', quantity: '1', gender: '', sharingFee: '', introduction: '', rule: '' })
+      setForm({ title: '', quantity: '1', gender: '', sharingFee: '', introduction: '', rule: '' })
       resource.reload()
     } catch (cause) {
       setNotice((cause as Error).message)
@@ -64,10 +59,7 @@ export function MySharing() {
         <div className="sharing-create-fields">
           <label className="sharing-field-wide">
             Phòng bạn đang thuê <span className="required-mark">*</span>
-            <select required value={form.roomId} onChange={e => setForm({ ...form, roomId: e.target.value })}>
-              <option value="">Chọn phòng đang thuê</option>
-              {activeRooms.map(item => <option key={item.roomId} value={item.roomId}>{item.roomTitle || 'Phòng đang thuê'}</option>)}
-            </select>
+            <input readOnly value={currentRoom?.roomTitle || (currentRoom ? 'Phòng đang thuê' : '')} placeholder="Chưa có phòng đang thuê" />
           </label>
           <label className="sharing-field-wide">
             Tiêu đề lời mời <span className="required-mark">*</span>
@@ -98,10 +90,12 @@ export function MySharing() {
             <textarea rows={4} value={form.rule} onChange={e => setForm({ ...form, rule: e.target.value })} placeholder="Ví dụ: Giữ vệ sinh chung, giờ giấc sinh hoạt…" />
           </label>
         </div>
-        {activeRooms.length === 0 && !tenancies.loading && <p className="sharing-create-note"><House size={16} /> Bạn cần có phòng đang thuê (trạng thái Hoạt động) để đăng lời mời.</p>}
+        {tenancies.error && <p className="sharing-create-note"><House size={16} /> Không tải được phòng đang thuê: {tenancies.error}</p>}
+        {activeRooms.length === 0 && !tenancies.loading && !tenancies.error && <p className="sharing-create-note"><House size={16} /> Bạn cần có phòng đang thuê (trạng thái Hoạt động) để đăng lời mời.</p>}
+        {activeRooms.length > 1 && <p className="sharing-create-note"><House size={16} /> Tài khoản có nhiều phòng đang thuê. Không thể xác định phòng để đăng tin.</p>}
         <div className="sharing-create-footer">
           <span>Các trường có dấu <span className="required-mark">*</span> là bắt buộc.</span>
-          <button className="button button-primary" type="submit" disabled={!form.roomId || submitting}>
+          <button className="button button-primary" type="submit" disabled={!currentRoom || submitting}>
             {submitting ? 'Đang đăng…' : 'Đăng lời mời'} <ArrowRight size={17} />
           </button>
         </div>

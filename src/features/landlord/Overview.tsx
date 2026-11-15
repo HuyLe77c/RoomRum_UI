@@ -15,7 +15,7 @@ export function LandlordOverview() {
     { title: 'Phòng đang đăng', value: owned.filter(room => room.status === 'Available').length, icon: <Home />, path: '/landlord/rooms', loading: rooms.loading, error: rooms.error },
     { title: 'Lịch hẹn chờ xử lý', value: appointments.data?.filter(item => item.status === 'Pending').length || 0, icon: <CalendarDays />, path: '/landlord/appointments', loading: appointments.loading, error: appointments.error },
     { title: 'Người thuê hiện tại', value: tenancies.data?.filter(item => item.status === 'Active').length || 0, icon: <Users />, path: '/landlord/tenancies', loading: tenancies.loading, error: tenancies.error },
-    { title: 'Sửa chữa chưa xong', value: repairs.data?.filter(item => item.status === 'Pending' || item.status === 'InProgress').length || 0, icon: <Wrench />, path: '/landlord/repairs', loading: repairs.loading, error: repairs.error },
+    { title: 'Sửa chữa và bảo trì', value: repairs.data?.filter(item => item.status === 'Pending' || item.status === 'Scheduled' || item.status === 'InProgress').length || 0, icon: <Wrench />, path: '/landlord/repairs', loading: repairs.loading, error: repairs.error },
   ]
   return <div className="landlord-overview">
     <Heading title={`Chào ${session?.name || 'bạn'}, quản lý nhà trọ dễ dàng hơn.`} description="Xem nhanh việc cần xử lý từ dữ liệu phòng và người thuê của bạn." action={<Link className="button button-primary" to="/landlord/rooms?new=1"><Plus size={17} /> Đăng phòng</Link>} />

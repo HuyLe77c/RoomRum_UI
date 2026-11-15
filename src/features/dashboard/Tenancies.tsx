@@ -19,6 +19,7 @@ export function Tenancies({ role }: { role: RolePath }) {
       await api(path, { method: 'PATCH' })
       setNotice('Đã cập nhật quan hệ thuê.')
       resource.reload()
+      if (role === 'tenant') window.dispatchEvent(new Event('roomrum-tenancy-updated'))
     } catch (cause) {
       setNotice((cause as Error).message)
     }
