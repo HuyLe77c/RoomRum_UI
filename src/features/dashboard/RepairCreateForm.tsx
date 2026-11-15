@@ -13,15 +13,17 @@ export function RepairCreateForm({ kind, rooms, loading, onCreated }: {
   onCreated: () => void
 }) {
   const isNotice = kind === 'notice'
+  const currentRoom = rooms[0]
   const blank = (): RepairForm => ({ roomId: rooms.length === 1 ? rooms[0].roomId : '', priority: 'Bình thường', repairItems: '', description: '', expectingDate: '' })
   const [form, setForm] = useState<RepairForm>(blank)
+  const selectedRoomId = isNotice ? form.roomId : currentRoom?.roomId || ''
   const [submitting, setSubmitting] = useState(false)
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!form.roomId && rooms.length === 1) setForm(previous => ({ ...previous, roomId: rooms[0].roomId }))
-  }, [form.roomId, rooms])
+    if (isNotice && !form.roomId && rooms.length === 1) setForm(previous => ({ ...previous, roomId: rooms[0].roomId }))
+  }, [form.roomId, isNotice, rooms])
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
@@ -31,6 +33,7 @@ export function RepairCreateForm({ kind, rooms, loading, onCreated }: {
     try {
       await api(isNotice ? '/repairs/maintenance-notices' : '/repairs', json('POST', {
         ...form,
+        roomId: selectedRoomId,
         expectingDate: form.expectingDate || null,
       }))
       setNotice(isNotice ? 'Đã tạo thông báo bảo trì.' : 'Đã gửi yêu cầu sửa chữa.')
@@ -56,10 +59,10 @@ export function RepairCreateForm({ kind, rooms, loading, onCreated }: {
       </div>
       <div className="sharing-create-fields">
         <label>Phòng <span className="required-mark">*</span>
-          <select required value={form.roomId} onChange={e => setForm({ ...form, roomId: e.target.value })}>
-            <option value="">{isNotice ? 'Chọn phòng bạn quản lý' : 'Chọn phòng đang thuê'}</option>
+          {isNotice ? <select required value={form.roomId} onChange={e => setForm({ ...form, roomId: e.target.value })}>
+            <option value="">Chọn phòng bạn quản lý</option>
             {rooms.map(room => <option key={room.roomId} value={room.roomId}>{room.roomTitle || 'Phòng trọ'}</option>)}
-          </select>
+          </select> : <input readOnly value={currentRoom ? currentRoom.roomTitle || 'Phòng trọ' : ''} placeholder={loading ? 'Đang tải phòng đang thuê…' : 'Chưa có phòng đang thuê'} />}
         </label>
         {!isNotice && <label>Mức ưu tiên
           <select value={form.priority} onChange={e => setForm({ ...form, priority: e.target.value })}>
@@ -78,7 +81,7 @@ export function RepairCreateForm({ kind, rooms, loading, onCreated }: {
       {rooms.length === 0 && !loading && <p className="sharing-create-note"><House size={16} /> {isNotice ? 'Bạn cần có phòng đang quản lý để tạo thông báo.' : 'Bạn cần có phòng đang thuê (trạng thái Hoạt động) để gửi yêu cầu.'}</p>}
       <div className="sharing-create-footer">
         <span>Các trường có dấu <span className="required-mark">*</span> là bắt buộc.</span>
-        <button className="button button-primary" type="submit" disabled={!form.roomId || submitting || loading}>
+        <button className="button button-primary" type="submit" disabled={!selectedRoomId || submitting || loading}>
           {submitting ? 'Đang gửi…' : isNotice ? 'Tạo thông báo' : 'Gửi yêu cầu'} <ArrowRight size={17} />
         </button>
       </div>

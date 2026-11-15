@@ -8,6 +8,12 @@ export function useResource<T>(path: string | null) {
   const [dataPath, setDataPath] = useState<string | null>(null)
   const [version, reload] = useState(0)
   useEffect(() => {
+    if (!path || !(/^\/(rooms|admin\/rooms)(\/|\?|$)/.test(path) || path.startsWith('/room-tenants/mine'))) return
+    const refresh = () => reload(value => value + 1)
+    window.addEventListener('roomrum-rooms-updated', refresh)
+    return () => window.removeEventListener('roomrum-rooms-updated', refresh)
+  }, [path])
+  useEffect(() => {
     if (!path) { setData(null); setDataPath(null); setLoading(false); return }
     let active = true
     setLoading(true); setError('')

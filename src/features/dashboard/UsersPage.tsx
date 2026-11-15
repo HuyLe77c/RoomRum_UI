@@ -9,9 +9,9 @@ export function UsersPage() {
   const resource = useResource<AdminUser[]>('/admin/users?page=1&pageSize=50')
   const [notice, setNotice] = useState('')
   const [selectedLandlord, setSelectedLandlord] = useState<AdminUser | null>(null)
-  const update = async (id: string, field: 'status' | 'role', value: string) => {
+  const update = async (id: string, value: string) => {
     try {
-      await api(`/admin/users/${id}/${field}`, json('PATCH', { [field]: value }))
+      await api(`/admin/users/${id}/status`, json('PATCH', { status: value }))
       resource.reload()
       setNotice('Đã cập nhật tài khoản.')
     } catch (cause) { setNotice((cause as Error).message) }
@@ -29,8 +29,8 @@ export function UsersPage() {
           <td>{date(item.createdAt)}</td>
           <td><div className="table-actions">
             {item.role === 'Landlord' && <button className="button button-secondary small" type="button" onClick={() => setSelectedLandlord(item)}>Xem ảnh đăng ký</button>}
-            <select aria-label={`Vai trò của ${item.name}`} value={item.role} onChange={e => update(item.userId, 'role', e.target.value)}><option value="Tenant">Người thuê</option><option value="Landlord">Chủ phòng</option><option value="Admin">Quản trị</option></select>
-            <select aria-label={`Trạng thái của ${item.name}`} value={item.status || 'Inactive'} onChange={e => update(item.userId, 'status', e.target.value)}><option value="Inactive">Chờ kích hoạt</option><option value="Active">Hoạt động</option><option value="Locked">Khóa</option></select>
+            <input aria-label={`Vai trò của ${item.name}`} value={item.role === 'Tenant' ? 'Người thuê' : item.role === 'Landlord' ? 'Chủ phòng' : item.role === 'Admin' ? 'Quản trị' : item.role} readOnly />
+            <select aria-label={`Trạng thái của ${item.name}`} value={item.status || 'Inactive'} onChange={e => update(item.userId, e.target.value)}><option value="Inactive">Chờ kích hoạt</option><option value="Active">Hoạt động</option><option value="Locked">Khóa</option></select>
           </div></td>
         </tr>)}</tbody></table></div>}
     </DataPanel>
