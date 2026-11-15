@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import { AuthProvider, Footer, Header, State } from '../shared/ui'
 import { HomePage } from '../features/home/HomePage'
+import { useRoomUpdates } from '../shared/hooks/useRoomUpdates'
 
 const SearchPage = lazy(() => import('../features/search/AdvancedSearchPage').then(module => ({ default: module.SearchPage })))
 const DetailPage = lazy(() => import('../features/rooms/DetailPage').then(module => ({ default: module.DetailPage })))
@@ -11,6 +12,7 @@ const AuthPage = lazy(() => import('../features/auth/AuthPage').then(module => (
 const DashboardRouter = lazy(() => import('../features/dashboard/DashboardRouter').then(module => ({ default: module.DashboardRouter })))
 
 export default function App() {
+  useRoomUpdates()
   return <AuthProvider><Suspense fallback={<><Header /><main className="container generic-page" role="status">Đang mở trang…</main></>}><Routes>
     <Route path="/" element={<HomePage />} />
     <Route path="/search" element={<SearchPage />} />

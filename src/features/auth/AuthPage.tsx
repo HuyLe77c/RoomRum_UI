@@ -70,7 +70,9 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           await api<Registration>('/auth/register', json('POST', form))
         }
         save(null)
-        setNotice('Tài khoản đã được tạo và đang chờ quản trị viên kích hoạt. Bạn có thể đăng nhập sau khi được duyệt.')
+        setNotice(form.role === 'Landlord'
+          ? 'Tài khoản đã được tạo và đang chờ quản trị viên kích hoạt. Bạn có thể đăng nhập sau khi được duyệt.'
+          : 'Đã gửi đường dẫn kích hoạt trong gmail. Bấm vào đường dẫn để kích hoạt.')
         return
       }
       const session = await api<Session>('/auth/login', json('POST', { email: form.email, password: form.password }))

@@ -8,7 +8,9 @@ import { RepairCreateForm } from './RepairCreateForm'
 export function Repairs({ role }: { role: RolePath }) {
   const resource = useResource<Repair[]>('/repairs/mine?page=1&pageSize=100')
   const tenancies = useResource<Tenancy[]>(role === 'tenant' ? '/room-tenants/mine?page=1&pageSize=100' : null)
-  const activeRooms = tenancies.data?.filter(item => item.status === 'Active').map(item => ({ roomId: item.roomId, roomTitle: item.roomTitle })) || []
+  const activeRooms = tenancies.data?.filter(item => item.status === 'Active')
+    .sort((a, b) => b.hiredAt.localeCompare(a.hiredAt))
+    .map(item => ({ roomId: item.roomId, roomTitle: item.roomTitle })) || []
 
   return <>
     <Heading

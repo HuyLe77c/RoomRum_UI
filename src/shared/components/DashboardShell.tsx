@@ -4,6 +4,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { Bell, Heart, Home, LayoutDashboard, LogOut, Menu, MessageCircle, Search, ShieldCheck, UserRound, X } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import { useResource } from '../hooks/useResource'
+import { useChatUpdates } from '../hooks/useChatUpdates'
 import type { Tenancy } from '../types'
 import { Logo } from './SiteChrome'
 
@@ -12,6 +13,9 @@ export function DashboardShell({ role, children }: { role: 'tenant' | 'landlord'
   const { session, save } = useAuth(); const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const tenancies = useResource<Tenancy[]>(role === 'tenant' ? '/room-tenants/mine?page=1&pageSize=100' : null)
+  const unanswered = useResource<number>(role === 'tenant' || role === 'landlord' ? '/chat/unanswered-count' : null)
+  useChatUpdates(role === 'tenant' || role === 'landlord' ? session?.token : undefined,
+    () => unanswered.reload())
   useEffect(() => {
     if (role !== 'tenant') return
     const refreshTenancies = () => tenancies.reload()
@@ -29,7 +33,7 @@ export function DashboardShell({ role, children }: { role: 'tenant' | 'landlord'
     ...(hasActiveRoom || hasPendingInvite || !!tenancies.error ? [{ path: '/tenant/tenancies', label: 'Phòng đang thuê', icon: <Home size={18} /> }] : []),
     ...(hasActiveRoom ? [{ path: '/tenant/sharing', label: 'Tạo tin ở ghép', icon: <UserRound size={18} /> }] : []),
     ...(!hasActiveRoom ? [{ path: '/tenant/sharing-requests', label: 'Tin yêu cầu ở ghép', icon: <UserRound size={18} /> }] : []),
-    { path: '/tenant/repairs', label: 'Sửa chữa & bảo trì', icon: <ShieldCheck size={18} /> },
+    ...(hasActiveRoom ? [{ path: '/tenant/repairs', label: 'Sửa chữa & bảo trì', icon: <ShieldCheck size={18} /> }] : []),
     { path: '/tenant/reports', label: 'Báo cáo', icon: <ShieldCheck size={18} /> },
     { path: '/tenant/messages', label: 'Tin nhắn', icon: <MessageCircle size={18} /> },
     { path: '/tenant/profile', label: 'Hồ sơ', icon: <UserRound size={18} /> },
@@ -49,5 +53,5 @@ export function DashboardShell({ role, children }: { role: 'tenant' | 'landlord'
     { path: '/admin/reports', label: 'Báo cáo', icon: <ShieldCheck size={18} /> },
     { path: '/admin/profile', label: 'Hồ sơ', icon: <UserRound size={18} /> },
   ]
-  return <div className="dashboard">{menuOpen && <button className="dashboard-backdrop" aria-label="Đóng menu tài khoản" onClick={() => setMenuOpen(false)} />}<aside className={menuOpen ? 'dashboard-sidebar mobile-open' : 'dashboard-sidebar'}><div className="sidebar-brand-line"><Logo /><button className="icon-button dashboard-menu-close" aria-label="Đóng menu" onClick={() => setMenuOpen(false)}><X size={20} /></button></div><div className="sidebar-caption">{role === 'tenant' ? 'Dành cho người thuê' : role === 'landlord' ? 'Dành cho chủ phòng' : 'Quản trị hệ thống'}</div><nav aria-label="Điều hướng tài khoản">{items.map(item => <NavLink key={item.path} to={item.path} end={item.path.split('/').length === 2} onClick={() => setMenuOpen(false)}>{item.icon}{item.label}</NavLink>)}</nav><div className="sidebar-foot"><button onClick={() => { save(null); navigate('/') }}><LogOut size={17} /> Đăng xuất</button></div></aside><div className="dashboard-main"><div className="dashboard-top"><div className="dashboard-mobile-brand"><Logo /></div><span>Xin chào, <strong>{session?.name}</strong></span><span className="avatar">{session?.name?.slice(0, 1).toUpperCase()}</span><button className="icon-button dashboard-menu-button" aria-label="Mở menu tài khoản" onClick={() => setMenuOpen(true)}><Menu size={21} /></button></div><div className="dashboard-content">{children}</div><nav className="dashboard-mobile-nav" aria-label="Điều hướng tài khoản">{items.slice(0, 5).map(item => <NavLink key={item.path} to={item.path} end={item.path.split('/').length === 2}>{item.icon}<span>{item.label}</span></NavLink>)}</nav></div></div>
+  return <div className="dashboard">{menuOpen && <button className="dashboard-backdrop" aria-label="Đóng menu tài khoản" onClick={() => setMenuOpen(false)} />}<aside className={menuOpen ? 'dashboard-sidebar mobile-open' : 'dashboard-sidebar'}><div className="sidebar-brand-line"><Logo /><button className="icon-button dashboard-menu-close" aria-label="Đóng menu" onClick={() => setMenuOpen(false)}><X size={20} /></button></div><div className="sidebar-caption">{role === 'tenant' ? 'Dành cho người thuê' : role === 'landlord' ? 'Dành cho chủ phòng' : 'Quản trị hệ thống'}</div><nav aria-label="Điều hướng tài khoản">{items.map(item => <NavLink key={item.path} to={item.path} end={item.path.split('/').length === 2} onClick={() => setMenuOpen(false)}>{item.icon}{item.label}{item.path.endsWith('/messages') && (unanswered.data ?? 0) > 0 && <span className="message-count" aria-label={`${unanswered.data} tin nhắn chưa phản hồi`}>{unanswered.data}</span>}</NavLink>)}</nav><div className="sidebar-foot"><button onClick={() => { save(null); navigate('/') }}><LogOut size={17} /> Đăng xuất</button></div></aside><div className="dashboard-main"><div className="dashboard-top"><div className="dashboard-mobile-brand"><Logo /></div><span>Xin chào, <strong>{session?.name}</strong></span><span className="avatar">{session?.name?.slice(0, 1).toUpperCase()}</span><button className="icon-button dashboard-menu-button" aria-label="Mở menu tài khoản" onClick={() => setMenuOpen(true)}><Menu size={21} /></button></div><div className="dashboard-content">{children}</div><nav className="dashboard-mobile-nav" aria-label="Điều hướng tài khoản">{items.slice(0, 5).map(item => <NavLink key={item.path} to={item.path} end={item.path.split('/').length === 2}>{item.icon}<span>{item.label}</span></NavLink>)}</nav></div></div>
 }

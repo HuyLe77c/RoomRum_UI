@@ -59,6 +59,8 @@
 .thread-recipient-picker{padding-top:10px;border-top:1px dashed #e3ebf5}
 .recipient-badge{display:flex;align-items:center;gap:8px;background:#eef5ff;border:1px solid #cfe2fa;padding:8px 12px;border-radius:10px;font-size:12px;color:#244872}
 .recipient-badge strong{color:#183a63}
+.table-actions input[readonly]{width:87px;border:1px solid #dce6f0;border-radius:7px;padding:6px;font-size:10px;color:#263b5a;background:#f8fafc;cursor:default}
+.dashboard-sidebar nav .message-count{margin-left:auto;min-width:20px;height:20px;padding:0 5px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:#e33445;color:#fff;font-size:11px;font-weight:800;line-height:1;flex:none}
 .recipient-change-btn{margin-left:auto;border:0;background:#fff;color:#2868b5;font-size:11px;font-weight:700;padding:5px 10px;border-radius:7px;cursor:pointer;border:1px solid #cfe2fa}
 .recipient-change-btn:hover{background:#e2effe}
 .recipient-select-label{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;color:#3c5575}

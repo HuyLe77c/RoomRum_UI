@@ -6,6 +6,7 @@ import { api, json } from '../../shared/api/client'
 import { Loading, State, useAuth, useResource } from '../../shared/ui'
 import type { Conversation, Message, RoomSearch, Sharing } from '../../shared/types'
 import { Heading, Notice, DataPanel } from './shared'
+import { useChatUpdates } from '../../shared/hooks/useChatUpdates'
 
 type ContactOption = {
   userId: string
@@ -36,6 +37,11 @@ export function Messages() {
   const messages = useResource<Message[]>(
     active ? `/chat/conversations/${active}/messages?page=1&pageSize=50` : null
   )
+
+  useChatUpdates(session?.token, () => {
+    resource.reload()
+    if (active) messages.reload()
+  })
 
   const chosen = useMemo(
     () => resource.data?.find(item => item.conversationId === active) || null,

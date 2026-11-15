@@ -6,6 +6,7 @@ import { api, json } from '../../shared/api/client'
 import { ErrorState, Loading, State, useAuth, useResource } from '../../shared/ui'
 import type { Appointment, Conversation, Message, Tenancy } from '../../shared/types'
 import { Heading, Feedback } from './shared'
+import { useChatUpdates } from '../../shared/hooks/useChatUpdates'
 
 type ContactOption = {
   userId: string
@@ -37,6 +38,11 @@ export function LandlordMessages() {
   const messages = useResource<Message[]>(
     active ? `/chat/conversations/${active}/messages?page=1&pageSize=100` : null
   )
+
+  useChatUpdates(session?.token, () => {
+    conversations.reload()
+    if (active) messages.reload()
+  })
 
   const chosen = useMemo(
     () => conversations.data?.find(item => item.conversationId === active) || null,
